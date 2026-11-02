@@ -119,5 +119,5 @@ export function montarTimeline(roteiro, fps = 30) {
   });
   // arredonda a duração para frames inteiros
   const total = Math.ceil(t * fps) / fps;
-  return { id: roteiro.id, fps, dur: total, beats, musica: roteiro.musica, arquivo: roteiro.arquivo };
+  return { id: roteiro.id, fps, dur: total, beats, musica: roteiro.musica, arquivo: roteiro.arquivo, cenas: roteiro.urlCenas };
 }

@@ -79,12 +79,12 @@ for (const p of Object.values(PROVEDORES)) {
   else aviso(rotulo);
 }
 
-console.log('\nRoteiros');
+console.log(`\nVídeos (projetos em ${cfg.projetos})`);
 const roteiros = await carregarRoteiros();
 for (const r of Object.values(roteiros)) {
   const erros = [...validarRoteiro(r, { efeitos: Object.keys(SFX) }), ...verificarCenas(r)];
   if (erros.length) erros.forEach((e) => falha(e));
-  else ok(`${r.id} (${r.beats.length} cenas)${fs.existsSync(path.join(cfg.saida, `${r.arquivo}.mp4`)) ? '' : ' — ainda não gerado'}`);
+  else ok(`${r.id}${r.origem === 'exemplo' ? ' [exemplo]' : ''} (${r.beats.length} cenas)${fs.existsSync(path.join(cfg.saida, `${r.arquivo}.mp4`)) ? '' : ' — ainda não gerado'}`);
 }
 
 console.log(problemas ? `\n${problemas} problema(s) encontrado(s).` : '\nTudo pronto para gerar vídeos.');

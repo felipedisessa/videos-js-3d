@@ -10,7 +10,7 @@ import { iniciarServidor } from './servidor.mjs';
 import { acharNavegador, flagsGpu } from './navegador.mjs';
 
 async function abrir(id, timeline, cfg) {
-  const { server, porta } = await iniciarServidor(RAIZ);
+  const { server, porta } = await iniciarServidor(RAIZ, { '/projetos/': cfg.projetos });
   let browser;
   try {
     browser = await puppeteer.launch({
@@ -24,7 +24,7 @@ async function abrir(id, timeline, cfg) {
       if ((m.type() === 'error' || m.type() === 'warn') && !/favicon|404/.test(m.text())) console.log(`  [página] ${m.text()}`);
     });
     page.on('pageerror', (e) => console.log(`  [erro na página] ${e.message}`));
-    await page.goto(`http://127.0.0.1:${porta}/web/index.html?v=${encodeURIComponent(id)}`);
+    await page.goto(`http://127.0.0.1:${porta}/web/index.html?cenas=${encodeURIComponent(timeline.cenas)}`);
     await page.waitForFunction('window.__pronto || window.__erro', { timeout: 120000 });
     const erro = await page.evaluate(() => window.__erro);
     if (erro) throw new Error(erro);

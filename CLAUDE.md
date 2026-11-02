@@ -1,13 +1,13 @@
 # CLAUDE.md
 
-Gerador de Shorts/TikToks 3D "O que acontece se…?" para canal dark. O `README.md` documenta comandos, vozes, formato do roteiro, API do motor, personagens e props: leia antes de mexer.
+Ferramenta genérica para gerar Shorts/TikToks 3D "O que acontece se…?". O repositório guarda só a ferramenta (motor, vozes, biblioteca de peças, 2 exemplos); os vídeos do usuário ficam em `projetos/` (fora do git, ou em `PROJETOS_DIR`) e **não devem ser commitados**. O `README.md` documenta comandos, vozes, formato do roteiro, API do motor, personagens e props: leia antes de mexer.
 
 ## Fluxo para criar vídeos novos
 
-1. Escolha temas inéditos (veja `roteiros/`) com fatos verificáveis: pesquise e confira números; nada de conselho de saúde arriscado.
-2. `npm run novo -- <id> "Título"` e escreva `roteiros/<id>.mjs`, incluindo `publicacao` (legenda, hashtags, título e descrição do Shorts).
+1. Escolha temas inéditos (veja `projetos/` e o LEIA-ME da pasta de saída) com fatos verificáveis: pesquise e confira números; nada de conselho de saúde arriscado.
+2. `npm run novo -- <id> "Título"` e escreva `projetos/<id>/roteiro.mjs`, incluindo `publicacao` (legenda, hashtags, título e descrição do Shorts).
 3. `npm run audio -- <id>` e confira `build/<id>/timeline.json` (o TTS às vezes junta "200 quilômetros por hora" numa palavra; use `'w:200'` em cues numéricas).
-4. Monte `web/videos/<id>.js` reaproveitando cenas/objetos dos outros vídeos (`import` entre vídeos funciona: `texturaTerra` de `buraco.js`, `predio`/`nuvem` de `formiga.js`, `pilula` de `chiclete.js`).
+4. Monte `projetos/<id>/cenas.js` com as peças de `web/props.js` e `web/biblioteca/` (imports absolutos: `/web/...`). Peça nova que sirva para outros vídeos vai para a biblioteca (isso sim é commitado).
 5. `npm run stills -- <id>` e **olhe** `build/<id>/sheet.jpg` (3 frames por cena). Itere até nada ficar cortado e a ação ficar acima da legenda.
 6. `npm run video -- <id>`. O MP4 e o LEIA-ME saem na pasta de saída (padrão: `Desktop/Videos Canal Dark 3D`).
 7. `npm run check` antes de commitar.

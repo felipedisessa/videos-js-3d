@@ -21,13 +21,13 @@
 <body>
 <script type="module">
   import { Engine } from '/web/engine.js';
-  const id = new URLSearchParams(location.search).get('v');
+  const cenas = new URLSearchParams(location.search).get('cenas');
   try {
     await document.fonts.load('900 80px Montserrat');
     await document.fonts.load('800 40px Montserrat');
     const E = new Engine();
     await E.init();
-    const mod = await import(`/web/videos/${id}.js`);
+    const mod = await import(cenas);
     const video = mod.criar(E);
     window.__setup = (tl) => { E.setup(tl, video); return true; };
     window.__frame = (t, q) => E.frame(t, q);

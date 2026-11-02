@@ -1,4 +1,6 @@
-// Carrega e valida os roteiros (um arquivo por vídeo em roteiros/<id>.mjs).
+// Carrega e valida os vídeos. Cada vídeo é uma pasta com roteiro.mjs (texto, tempos, efeitos) e cenas.js (3D):
+//   exemplos/<id>/   versionados no git, servem de modelo
+//   projetos/<id>/   os vídeos do usuário, fora do git (pasta configurável com PROJETOS_DIR)
 //
 // Cada roteiro:
 //   ordem, titulo, arquivo (nome do MP4), velocidade ('+7%' ou 1.07), musica { bpm, acordes, clima },
@@ -16,30 +18,42 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { RAIZ, fatorVelocidade } from './config.mjs';
+import { RAIZ, fatorVelocidade, pastaProjetos } from './config.mjs';
 
-export const PASTA_ROTEIROS = path.join(RAIZ, 'roteiros');
+export const PASTA_EXEMPLOS = path.join(RAIZ, 'exemplos');
 const CLIMAS = ['brincalhao', 'curioso', 'misterio'];
 
-/** @returns {Promise<Record<string, object>>} roteiros por id, na ordem de `ordem` */
-export async function carregarRoteiros() {
-  const arquivos = fs.readdirSync(PASTA_ROTEIROS).filter((f) => f.endsWith('.mjs'));
+async function lerPasta(base, origem, urlBase) {
+  if (!fs.existsSync(base)) return [];
   const lista = [];
-  for (const f of arquivos) {
-    const id = path.basename(f, '.mjs');
-    const mod = await import(pathToFileURL(path.join(PASTA_ROTEIROS, f)).href);
-    lista.push({ id, ...mod.default });
+  for (const id of fs.readdirSync(base)) {
+    const arq = path.join(base, id, 'roteiro.mjs');
+    if (!fs.existsSync(arq)) continue;
+    const mod = await import(pathToFileURL(arq).href);
+    lista.push({ ...mod.default, id, origem, pasta: path.join(base, id), urlCenas: `${urlBase}/${encodeURIComponent(id)}/cenas.js` });
   }
-  lista.sort((a, b) => (a.ordem ?? 999) - (b.ordem ?? 999) || a.id.localeCompare(b.id));
+  return lista;
+}
+
+/**
+ * @param {{ exemplos?: boolean }} op exemplos=false deixa só os projetos do usuário
+ * @returns {Promise<Record<string, object>>} vídeos por id, na ordem de `ordem` (um projeto com o mesmo id de um exemplo o substitui)
+ */
+export async function carregarRoteiros({ exemplos = true } = {}) {
+  const porId = new Map();
+  if (exemplos) for (const r of await lerPasta(PASTA_EXEMPLOS, 'exemplo', '/exemplos')) porId.set(r.id, r);
+  for (const r of await lerPasta(pastaProjetos(), 'projeto', '/projetos')) porId.set(r.id, r);
+  const lista = [...porId.values()].sort((a, b) => (a.ordem ?? 999) - (b.ordem ?? 999) || a.id.localeCompare(b.id));
   return Object.fromEntries(lista.map((r) => [r.id, r]));
 }
 
-/** Confere se web/videos/<id>.js existe e tem uma função para cada beat. */
+/** Confere se <pasta>/cenas.js existe e tem uma função para cada beat. */
 export function verificarCenas(r) {
-  const arq = path.join(RAIZ, 'web', 'videos', `${r.id}.js`);
-  if (!fs.existsSync(arq)) return [`${r.id}: falta o arquivo de cenas web/videos/${r.id}.js (crie com npm run novo)`];
+  const arq = path.join(r.pasta, 'cenas.js');
+  const rel = path.relative(RAIZ, arq);
+  if (!fs.existsSync(arq)) return [`${r.id}: falta o arquivo de cenas ${rel} (crie com npm run novo)`];
   const src = fs.readFileSync(arq, 'utf8');
-  return r.beats.filter((b) => !new RegExp(`\\b${b.id}\\s*\\(\\s*s\\s*\\)\\s*\\{`).test(src)).map((b) => `${r.id}: web/videos/${r.id}.js não tem a cena "${b.id}(s) { ... }"`);
+  return r.beats.filter((b) => !new RegExp(`\\b${b.id}\\s*\\(\\s*s\\s*\\)\\s*\\{`).test(src)).map((b) => `${r.id}: ${rel} não tem a cena "${b.id}(s) { ... }"`);
 }
 
 /** Lista de problemas encontrados no roteiro (vazia = ok). */

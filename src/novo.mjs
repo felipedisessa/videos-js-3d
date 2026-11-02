@@ -2,8 +2,8 @@
 //   npm run novo -- polvo "Por que o polvo tem três corações?"
 import fs from 'node:fs';
 import path from 'node:path';
-import { RAIZ } from './config.mjs';
-import { carregarRoteiros, PASTA_ROTEIROS } from './roteiros.mjs';
+import { pastaProjetos } from './config.mjs';
+import { carregarRoteiros } from './roteiros.mjs';
 
 const [id, ...resto] = process.argv.slice(2);
 const titulo = resto.join(' ').trim();
@@ -11,14 +11,16 @@ if (!id || !/^[a-z0-9-]+$/.test(id) || !titulo) {
   console.error('Uso: npm run novo -- <id-em-minusculas> "Título do vídeo"');
   process.exit(1);
 }
-const arqRoteiro = path.join(PASTA_ROTEIROS, `${id}.mjs`);
-const arqCenas = path.join(RAIZ, 'web', 'videos', `${id}.js`);
-if (fs.existsSync(arqRoteiro) || fs.existsSync(arqCenas)) {
-  console.error(`Já existe um vídeo "${id}".`);
+const pasta = path.join(pastaProjetos(), id);
+const arqRoteiro = path.join(pasta, 'roteiro.mjs');
+const arqCenas = path.join(pasta, 'cenas.js');
+if (fs.existsSync(pasta)) {
+  console.error(`Já existe um vídeo "${id}" em ${pasta}.`);
   process.exit(1);
 }
 
-const roteiros = await carregarRoteiros();
+const roteiros = await carregarRoteiros({ exemplos: false });
+fs.mkdirSync(pasta, { recursive: true });
 const ordem = Math.max(0, ...Object.values(roteiros).map((r) => r.ordem ?? 0)) + 1;
 const semAcento = titulo.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[?!:/\\*"<>|]/g, '');
 const esc = (s) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
@@ -66,11 +68,11 @@ export default {
 };
 `);
 
-fs.writeFileSync(arqCenas, `// Cenas do vídeo "${titulo}". Uma função por beat do roteiro (roteiros/${id}.mjs).
-// Veja os outros arquivos desta pasta para exemplos de cenários, props e efeitos.
-import { W, seg, smooth, back, lerp, pulse } from '../engine.js';
-import { Boneco, misturar } from '../bonequinho.js';
-import { pilula } from './chiclete.js';
+fs.writeFileSync(arqCenas, `// Cenas do vídeo "${titulo}". Uma função por beat do roteiro.mjs desta pasta.
+// Peças prontas: /web/props.js e /web/biblioteca/*.js. Exemplos completos: exemplos/ no repositório.
+import { W, seg, smooth, back, lerp, pulse } from '/web/engine.js';
+import { Boneco, misturar } from '/web/bonequinho.js';
+import { pilula } from '/web/biblioteca/hud.js';
 
 export function criar(E) {
   const prota = new Boneco({ camisa: 0x22c55e, estilo: 'curto', cabelo: 0x3a2417 });
@@ -108,5 +110,5 @@ export function criar(E) {
 }
 `);
 
-console.log(`Criados:\n  ${path.relative(RAIZ, arqRoteiro)}\n  ${path.relative(RAIZ, arqCenas)}\n`);
+console.log(`Criados:\n  ${arqRoteiro}\n  ${arqCenas}\n`);
 console.log(`Próximos passos: escreva o roteiro, depois\n  npm run audio -- ${id}\n  npm run stills -- ${id}   (confira build/${id}/sheet.jpg)\n  npm run video -- ${id}`);

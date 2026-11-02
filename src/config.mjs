@@ -15,6 +15,11 @@ function pastaSaidaPadrao() {
   return fs.existsSync(desktop) ? path.join(desktop, 'Videos Canal Dark 3D') : path.join(RAIZ, 'saida');
 }
 
+/** Onde ficam os vídeos do usuário (fora do git). Pode apontar para qualquer pasta com PROJETOS_DIR. */
+export function pastaProjetos() {
+  return path.resolve(process.env.PROJETOS_DIR || path.join(RAIZ, 'projetos'));
+}
+
 /** Junta .env, variáveis de ambiente e flags (as flags têm prioridade). */
 export function lerConfig(flags = {}) {
   const env = process.env;
@@ -23,6 +28,7 @@ export function lerConfig(flags = {}) {
     voz: flags.voz ?? null,
     saida: path.resolve(flags.saida ?? env.SAIDA_DIR ?? pastaSaidaPadrao()),
     navegador: env.NAVEGADOR || null,
+    projetos: pastaProjetos(),
     fps: Number(env.FPS ?? 30),
   };
 }

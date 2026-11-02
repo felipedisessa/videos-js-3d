@@ -2,6 +2,8 @@
 
 Gera Shorts/TikToks/Reels verticais (1080x1920, 30 fps) no estilo **"O que acontece se…?"**: bonequinhos 3D estilo vinil, narração em pt-BR, legenda palavra por palavra, trilha e efeitos sonoros sintetizados (sem direitos autorais de terceiros). Funciona em **Windows, macOS e Linux**.
 
+É uma **ferramenta genérica**: o repositório traz o motor, as vozes, uma biblioteca de peças 3D reutilizáveis e dois exemplos. Os vídeos que você cria ficam numa pasta local de projetos, fora do git (veja [Onde ficam os vídeos](#onde-ficam-os-vídeos)).
+
 Cada vídeo sai em duas versões (com música e sem música, para usar um som em alta do TikTok) e o arquivo `LEIA-ME - titulos, legendas e hashtags.txt` é atualizado com o texto de publicação de cada um.
 
 ## Requisitos
@@ -27,7 +29,7 @@ O `doctor` confere Node, ffmpeg, navegador/GPU, pasta de saída, vozes e roteiro
 | Comando | O que faz |
 |---|---|
 | `npm run video -- <id>` | Gera o vídeo final (voz → áudio → render → MP4 com e sem música) |
-| `npm run video -- all` | Gera todos os vídeos de `roteiros/` |
+| `npm run video -- all` | Gera todos os vídeos da pasta de projetos |
 | `npm run stills -- <id>` | Renderiza 3 frames por cena em `build/<id>/sheet.jpg`, para conferir o visual |
 | `npm run audio -- <id>` | Só narração, timeline e mixagem (sem render) |
 | `npm run novo -- <id> "Título"` | Cria o esqueleto de um vídeo novo que já renderiza |
@@ -42,6 +44,17 @@ npm run video -- sal --tts piper --voz jeff-medium
 ```
 
 Cada vídeo leva ~1 minuto para renderizar numa GPU comum.
+
+## Onde ficam os vídeos
+
+Cada vídeo é uma pasta com dois arquivos: `roteiro.mjs` (texto, tempos, efeitos, música e textos de publicação) e `cenas.js` (as cenas 3D).
+
+| Pasta | No git? | Para quê |
+|---|---|---|
+| `exemplos/<id>/` | sim | modelos prontos (`chiclete`: personagens e corpo humano; `buraconegro`: espaço) |
+| `projetos/<id>/` | **não** | os seus vídeos. Troque o local com `PROJETOS_DIR` no `.env` (ex.: uma pasta sincronizada) |
+
+Um projeto com o mesmo id de um exemplo tem prioridade. `npm run video -- all` e o LEIA-ME consideram só os projetos.
 
 ## Vozes
 
@@ -91,13 +104,13 @@ Para integrar uma delas, crie um módulo em `src/tts/` seguindo a interface desc
 
 ## Criar um vídeo novo
 
-1. `npm run novo -- polvo "Por que o polvo tem três corações?"` cria `roteiros/polvo.mjs` e `web/videos/polvo.js`.
+1. `npm run novo -- polvo "Por que o polvo tem três corações?"` cria `projetos/polvo/roteiro.mjs` e `projetos/polvo/cenas.js`.
 2. Escreva o roteiro (fatos verificáveis!) e rode `npm run audio -- polvo`. Confira em `build/polvo/timeline.json` se as palavras e cues saíram certas.
-3. Monte as cenas em `web/videos/polvo.js`, reaproveitando os vídeos existentes.
+3. Monte as cenas em `projetos/polvo/cenas.js` com as peças da biblioteca e os exemplos como referência.
 4. `npm run stills -- polvo` e confira `build/polvo/sheet.jpg`. Repita até nada ficar cortado.
 5. `npm run video -- polvo`.
 
-### Roteiro (`roteiros/<id>.mjs`)
+### Roteiro (`roteiro.mjs`)
 
 ```js
 export default {
@@ -123,7 +136,9 @@ export default {
 
 **Efeitos sonoros**: `whoosh pop gulp boing buzz stamp bubbles ding squish flush alarm crack boom bloop stretch riser tick fail dun tada wind fall sizzle brake splash hic chuva radio beep`.
 
-### Cenas (`web/videos/<id>.js`)
+### Cenas (`cenas.js`)
+
+Importe o motor e as peças por caminho absoluto: `/web/engine.js`, `/web/bonequinho.js`, `/web/props.js`, `/web/biblioteca/*.js`.
 
 Exporta `criar(E)`, que monta os objetos 3D e devolve `{ beats: { <idDoBeat>(s) { ... } } }`. Cada função recebe `s = { t, T, dur, p, cue(nome), desde(nome), falaFim }` e deve ser **pura em relação ao tempo**: qualquer frame pode ser renderizado isolado.
 
@@ -139,7 +154,14 @@ Personagem (`web/bonequinho.js`): `new Boneco({ camisa, calca, cabelo, estilo, o
 - Poses prontas em `POSES` (idle, cintura, comemorar, maosRosto, maosJuntas, dedoBalanca, sentado, queda, mergulho, nadando…) e `misturar(a, b, k)`.
 - Expressões: neutro, sorriso, feliz, surpreso, assustado, triste, bravo, aliviado, dor, confuso, desconfiado, orgulhoso, mastigando, calor. Extras: `boca` (0–1), `pisca: 'L'`, `gx`/`gy` (olhar), `cheeks`.
 
-Objetos prontos em `web/props.js` (xis, check, placa de aviso, relógio, troféu, confete, estrelas, partículas, bolinha com rosto) e nos vídeos (Terra com continentes e corte, Lua, oceano, formiga, gato, prédio, nuvem, astronauta…). Um vídeo pode importar de outro.
+Peças prontas:
+- `web/props.js`: xis, check, placa de aviso, relógio, troféu, confete, estrelas, partículas, bolinha com rosto.
+- `web/biblioteca/espaco.js`: `texturaTerra` (continentes reais), `texturaCamadas` (corte da Terra), `texturaLua`, `halo`, `atmosfera`, `astronauta`, `buracoNegro`.
+- `web/biblioteca/seres.js`: `criarAbelha`, `bacteria`, `criarFormiga`, `criarGato`.
+- `web/biblioteca/cenario.js`: `flor`, `alimento` (maçã, melancia, amêndoa, café, arroz, pão, milho), `predio`, `casa`, `carro`, `arvore`, `nuvem`, `seta`, `texturaRocha`.
+- `web/biblioteca/hud.js` (2D): `pilula` (chamada "SIGA…"), `estrela`, `barra` (porcentagem), `grafico` (barras comparativas).
+
+Quando criar uma peça nova que sirva para outros vídeos, coloque na biblioteca em vez de deixar no `cenas.js`.
 
 **Enquadramento vertical**: com `fov 36`, a área visível a uma distância `d` tem altura ≈ `0,65·d` e largura ≈ `0,37·d`. A legenda fica em ~63% da altura, então deixe rosto e ação entre 20% e 55%. O topo (~330 px) é bom para títulos 2D.
 
@@ -154,8 +176,9 @@ Veja `.env.example`. Principais: `TTS_PROVEDOR`, a voz de cada provedor, `SAIDA_
 - `.editorconfig` e `.gitattributes` mantêm UTF-8 e quebras de linha LF.
 
 ```
-roteiros/<id>.mjs   roteiro de cada vídeo (texto, cues, efeitos, música, publicação)
-web/videos/<id>.js  cenas 3D de cada vídeo
+exemplos/<id>/      vídeos de exemplo (roteiro.mjs + cenas.js)
+projetos/<id>/      seus vídeos (fora do git; PROJETOS_DIR muda o local)
+web/biblioteca/     peças 3D e 2D reutilizáveis
 web/engine.js       motor de render (Three.js + pós-processamento + camada 2D/legendas)
 web/bonequinho.js   personagem
 web/props.js        objetos reutilizáveis

@@ -14,10 +14,17 @@ const TIPOS = {
   '.jpg': 'image/jpeg',
 };
 
-export function iniciarServidor(raiz) {
-  const base = path.resolve(raiz);
+/** `montagens` mapeia prefixos de URL para outras pastas, ex.: { '/projetos/': 'D:/meus-videos' }. */
+export function iniciarServidor(raiz, montagens = {}) {
   const server = http.createServer((req, res) => {
-    const url = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+    let url = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+    let base = path.resolve(raiz);
+    for (const [prefixo, pasta] of Object.entries(montagens)) {
+      if (url.startsWith(prefixo)) {
+        base = path.resolve(pasta);
+        url = '/' + url.slice(prefixo.length);
+      }
+    }
     const arquivo = path.resolve(base, '.' + url);
     if (!arquivo.startsWith(base)) {
       res.writeHead(403).end();

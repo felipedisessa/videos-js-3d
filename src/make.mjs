@@ -36,7 +36,12 @@ if (op.ajuda) {
 }
 
 const cfg = lerConfig(op);
-const ids = !positionals.length || positionals.includes('all') ? Object.keys(roteiros) : positionals;
+const projetos = Object.keys(roteiros).filter((id) => roteiros[id].origem === 'projeto');
+const ids = !positionals.length || positionals.includes('all') ? projetos : positionals;
+if (!ids.length) {
+  console.error(`Nenhum projeto em ${cfg.projetos}. Crie um com: npm run novo -- <id> "Título" (ou rode um exemplo: npm run video -- chiclete)`);
+  process.exit(1);
+}
 const desconhecidos = ids.filter((id) => !roteiros[id]);
 if (desconhecidos.length) {
   console.error(`Vídeo(s) desconhecido(s): ${desconhecidos.join(', ')}. Disponíveis: ${Object.keys(roteiros).join(', ')}`);
@@ -96,7 +101,7 @@ for (const id of ids) {
   }
 }
 
-if (!op.stills && !op['so-audio']) console.log(`\nLEIA-ME atualizado: ${escreverLeiame(roteiros, cfg.saida)}`);
+if (!op.stills && !op['so-audio']) console.log(`\nLEIA-ME atualizado: ${escreverLeiame(Object.fromEntries(projetos.map((id) => [id, roteiros[id]])), cfg.saida)}`);
 if (falhas) {
   console.error(`\n${falhas} vídeo(s) com erro. Rode "npm run doctor" para checar o ambiente.`);
   process.exit(1);

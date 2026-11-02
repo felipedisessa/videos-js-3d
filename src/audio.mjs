@@ -272,6 +272,16 @@ SFX.beep = (b, t0, g) => {
   render(b, t0, 0.12, (t, x) => o(1250) * Math.min(1, t / 0.005) * Math.min(1, (1 - x) / 0.2), 0.22 * g);
 };
 
+SFX.zumbido = (b, t0, g, R, dMax) => {
+  const f = new Filtro('bp', 900, 2);
+  const d = Math.max(0.6, dMax);
+  let ph = 0;
+  render(b, t0, d, (t) => {
+    ph += (215 + 18 * Math.sin(2 * Math.PI * 3.1 * t) + 9 * Math.sin(2 * Math.PI * 11 * t)) / SR;
+    return f.run(2 * (ph % 1) - 1) * (0.6 + 0.4 * Math.sin(2 * Math.PI * 0.8 * t)) * Math.min(1, t / 0.2) * Math.min(1, (d - t) / 0.3);
+  }, 0.35 * g);
+};
+
 // ---------------- música ----------------
 function marimba(b, t0, hz, amp) {
   const o1 = osc(), o2 = osc();

@@ -1,9 +1,10 @@
 // Vídeo 1: O que acontece se você engolir chiclete?
 import {
   THREE, W, mat, mesh, group, brilho, seg, smooth, easeOut, easeIn, back, elastic, pulse, lerp, textoContorno, explosao,
-} from '../engine.js';
-import { Boneco, POSES, misturar } from '../bonequinho.js';
-import { bolinha, placaAviso, particulas, RoundedBoxGeometry } from '../props.js';
+} from '/web/engine.js';
+import { Boneco, POSES, misturar } from '/web/bonequinho.js';
+import { bolinha, placaAviso, particulas, RoundedBoxGeometry } from '/web/props.js';
+import { estrela, pilula } from '/web/biblioteca/hud.js';
 
 const V = () => new THREE.Vector3();
 
@@ -478,41 +479,3 @@ export function criar(E) {
   };
 }
 
-export function estrela(ctx, x, y, r) {
-  if (r <= 0) return;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.beginPath();
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2;
-    const rr = i % 2 ? r * 0.28 : r;
-    ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
-  }
-  ctx.closePath();
-  ctx.fillStyle = '#fff6a8';
-  ctx.shadowColor = '#ffe135';
-  ctx.shadowBlur = 20;
-  ctx.fill();
-  ctx.restore();
-}
-
-export function pilula(ctx, txt, x, y, k) {
-  if (k <= 0) return;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(k, k);
-  ctx.font = '900 54px Montserrat';
-  const w = ctx.measureText(txt).width + 80;
-  ctx.beginPath();
-  ctx.roundRect(-w / 2, -48, w, 96, 48);
-  ctx.fillStyle = '#ff2d55';
-  ctx.lineWidth = 10;
-  ctx.strokeStyle = '#111';
-  ctx.stroke();
-  ctx.fill();
-  ctx.fillStyle = '#fff';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(txt, 0, 3);
-  ctx.restore();
-}
