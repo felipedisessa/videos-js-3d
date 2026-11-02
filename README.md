@@ -106,3 +106,4 @@ build/             cache de voz e arquivos intermediários (pode apagar)
 
 - A narração usa a voz do "Ler em voz alta" do Microsoft Edge (`msedge-tts`, precisa de internet). Para canal monetizado, considere regravar com a sua voz ou um TTS com licença comercial.
 - YouTube e TikTok penalizam conteúdo repetitivo/em massa: varie temas e roteiros e confira os fatos antes de publicar.
+"# videos-js-3d" 
