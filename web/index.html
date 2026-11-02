@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Render</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "/node_modules/three/build/three.module.js",
+    "three/addons/": "/node_modules/three/examples/jsm/",
+    "https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/+esm": "/node_modules/opentype.js/dist/opentype.module.js"
+  }
+}
+</script>
+<style>
+  @font-face { font-family: 'Montserrat'; font-weight: 900; src: url(/node_modules/@fontsource/montserrat/files/montserrat-latin-900-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Montserrat'; font-weight: 800; src: url(/node_modules/@fontsource/montserrat/files/montserrat-latin-800-normal.woff2) format('woff2'); }
+  html, body { margin: 0; background: #000; }
+</style>
+</head>
+<body>
+<script type="module">
+  import { Engine } from '/web/engine.js';
+  const id = new URLSearchParams(location.search).get('v');
+  try {
+    await document.fonts.load('900 80px Montserrat');
+    await document.fonts.load('800 40px Montserrat');
+    const E = new Engine();
+    await E.init();
+    const mod = await import(`/web/videos/${id}.js`);
+    const video = mod.criar(E);
+    window.__setup = (tl) => { E.setup(tl, video); return true; };
+    window.__frame = (t, q) => E.frame(t, q);
+    window.__E = E;
+    window.__pronto = true;
+  } catch (e) {
+    window.__erro = String(e && e.stack || e);
+  }
+</script>
+</body>
+</html>
