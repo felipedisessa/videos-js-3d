@@ -1,8 +1,8 @@
 // Vídeo 5: O que acontece se uma formiga cair de um prédio?
 import {
-  THREE, W, mat, mesh, group, rng, seg, smooth, easeOut, easeIn, back, elastic, pulse, wob, lerp, textoContorno,
+  THREE, W, mat, mesh, group, rng, seg, smooth, easeOut, back, pulse, wob, lerp, textoContorno,
 } from '../engine.js';
-import { Boneco, POSES, misturar, criarOlho } from '../bonequinho.js';
+import { Boneco, POSES, criarOlho } from '../bonequinho.js';
 import { RoundedBoxGeometry } from '../props.js';
 import { pilula } from './chiclete.js';
 
@@ -198,7 +198,7 @@ export function criar(E) {
     cidade.add(b);
   }
   mesh(new THREE.PlaneGeometry(200, 200), mat(0x4b5563, { roughness: 1 }), { rot: [-Math.PI / 2, 0, 0], pos: [0, -40, 0], parent: topo, sombra: false });
-  const nuvensTopo = Array.from({ length: 5 }, (_, i) => { const n = nuvem(R); n.position.set(-12 + i * 6, 6 + R() * 5, -30 - R() * 10); n.scale.setScalar(2.5); topo.add(n); return n; });
+  Array.from({ length: 5 }, (_, i) => { const n = nuvem(R); n.position.set(-12 + i * 6, 6 + R() * 5, -30 - R() * 10); n.scale.setScalar(2.5); topo.add(n); return n; });
 
   // ---------- calçada ----------
   const calcada = E.set();

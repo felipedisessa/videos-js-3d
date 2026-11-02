@@ -305,6 +305,8 @@ export class Engine {
   }
 
   setup(tl, video) {
+    const faltando = tl.beats.filter((b) => typeof video.beats[b.id] !== 'function').map((b) => b.id);
+    if (faltando.length) throw new Error(`web/videos/${tl.id}.js não tem cena para: ${faltando.join(', ')}`);
     this.tl = tl;
     this.video = video;
     for (const b of tl.beats) {
@@ -419,7 +421,6 @@ export class Engine {
 }
 
 // ---------- legendas ----------
-const norm = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
 function blocosLegenda(b) {
   const blocos = [];

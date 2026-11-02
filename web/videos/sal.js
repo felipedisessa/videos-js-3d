@@ -1,8 +1,8 @@
 // Vídeo 8: Por que o mar é salgado?
 import {
-  THREE, W, mat, mesh, group, brilho, rng, seg, smooth, easeOut, back, elastic, pulse, lerp, textoContorno,
+  THREE, W, mat, mesh, group, brilho, rng, seg, smooth, easeOut, back, pulse, lerp, textoContorno,
 } from '../engine.js';
-import { Boneco, POSES, misturar } from '../bonequinho.js';
+import { Boneco, misturar } from '../bonequinho.js';
 import { estrelas, particulas, RoundedBoxGeometry } from '../props.js';
 import { pilula } from './chiclete.js';
 import { texturaTerra } from './buraco.js';

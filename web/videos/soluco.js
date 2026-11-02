@@ -1,8 +1,8 @@
 // Vídeo 6: Por que a gente soluça?
 import {
-  THREE, W, mat, mesh, group, brilho, seg, smooth, easeOut, back, elastic, pulse, lerp, textoContorno, explosao,
+  THREE, W, mat, mesh, group, brilho, seg, smooth, easeOut, back, pulse, lerp, textoContorno, explosao,
 } from '../engine.js';
-import { Boneco, POSES, misturar, criarOlho } from '../bonequinho.js';
+import { Boneco, POSES, misturar } from '../bonequinho.js';
 import { trofeu, confete, particulas, RoundedBoxGeometry } from '../props.js';
 import { pilula } from './chiclete.js';
 
@@ -64,7 +64,7 @@ export function criar(E) {
     mesh(new RoundedBoxGeometry(0.95, 0.16, 1.2, 3, 0.07), mat(0xf9a8bd, { roughness: 0.4, clearcoat: 0.6 }), { pos: [-sx * 0.47, 0, 0], parent: piv });
     return { piv, sx };
   });
-  const arG = Array.from({ length: 30 }, (_, i) => mesh(new THREE.SphereGeometry(0.07, 12, 8), brilho(0xbfe6ff, 2.5), { parent: garganta, sombra: false }));
+  const arG = Array.from({ length: 30 }, () => mesh(new THREE.SphereGeometry(0.07, 12, 8), brilho(0xbfe6ff, 2.5), { parent: garganta, sombra: false }));
 
   // ---------- recorde ----------
   const recordeSet = E.set();

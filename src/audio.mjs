@@ -1,6 +1,7 @@
 // Trilha e efeitos sonoros sintetizados na hora (sem samples de terceiros), mixados com a narração.
 import fs from 'node:fs';
-import { SR } from './voz.mjs';
+import { SR } from './config.mjs';
+import { wavPcm16 } from './util/midia.mjs';
 
 const TAU = Math.PI * 2;
 
@@ -63,7 +64,7 @@ function acorde(nome) {
 }
 
 // ---------------- efeitos ----------------
-const SFX = {
+export const SFX = {
   whoosh(b, t0, g, R) {
     const f = new Filtro('bp', 500, 1.1);
     render(b, t0 - 0.12, 0.5, (t, x, i) => {
@@ -410,6 +411,13 @@ export function mixar(tl, saida, { musica = true } = {}) {
       fn(fx, b.start + s.t, s.ganho, R, b.dur - s.t);
     }
   }
+  // provedores de voz diferentes saem com volumes diferentes: normaliza o pico da narração
+  let pico = 0;
+  for (let i = 0; i < N; i++) pico = Math.max(pico, Math.abs(voz[i]));
+  if (pico > 0) {
+    const g = Math.min(4, 0.9 / pico);
+    for (let i = 0; i < N; i++) voz[i] *= g;
+  }
   const mus = musica ? gerarMusica(tl.musica, tl.dur) : null;
   // envelope da voz para abaixar a música enquanto alguém fala
   const env = new Float32Array(N);
@@ -421,7 +429,7 @@ export function mixar(tl, saida, { musica = true } = {}) {
     e = a > e ? at * e + (1 - at) * a : rl * e + (1 - rl) * a;
     env[i] = e;
   }
-  const out = Buffer.alloc(44 + N * 4);
+  const mix = new Float32Array(N);
   for (let i = 0; i < N; i++) {
     let x = voz[i] * 0.95 + fx[i] * 0.5;
     if (mus) {
@@ -429,14 +437,7 @@ export function mixar(tl, saida, { musica = true } = {}) {
       const fade = Math.min(1, i / (SR * 0.05)) * Math.min(1, (N - i) / (SR * 0.25));
       x += mus[i] * 0.33 * duck * fade;
     }
-    const y = Math.tanh(x * 0.9);
-    const v = Math.max(-32767, Math.min(32767, Math.round(y * 32767)));
-    out.writeInt16LE(v, 44 + i * 4);
-    out.writeInt16LE(v, 46 + i * 4);
+    mix[i] = Math.tanh(x * 0.9);
   }
-  out.write('RIFF', 0); out.writeUInt32LE(36 + N * 4, 4); out.write('WAVE', 8);
-  out.write('fmt ', 12); out.writeUInt32LE(16, 16); out.writeUInt16LE(1, 20); out.writeUInt16LE(2, 22);
-  out.writeUInt32LE(SR, 24); out.writeUInt32LE(SR * 4, 28); out.writeUInt16LE(4, 32); out.writeUInt16LE(16, 34);
-  out.write('data', 36); out.writeUInt32LE(N * 4, 40);
-  fs.writeFileSync(saida, out);
+  fs.writeFileSync(saida, wavPcm16([mix, mix], SR));
 }

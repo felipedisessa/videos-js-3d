@@ -1,8 +1,8 @@
 // Vídeo 4: E se a Lua sumisse?
 import {
-  THREE, W, mat, mesh, group, brilho, rng, seg, smooth, easeOut, easeIn, back, elastic, pulse, lerp, textoContorno, explosao,
+  THREE, W, mat, mesh, group, brilho, rng, seg, smooth, easeIn, back, elastic, pulse, lerp, textoContorno, explosao,
 } from '../engine.js';
-import { Boneco, POSES, misturar, criarOlho } from '../bonequinho.js';
+import { Boneco, misturar, criarOlho } from '../bonequinho.js';
 import { estrelas, particulas } from '../props.js';
 import { pilula } from './chiclete.js';
 import { texturaTerra } from './buraco.js';

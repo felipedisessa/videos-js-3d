@@ -1,4 +1,7 @@
 node_modules/
 build/
+modelos/
+saida/
+.env
 *.mp4
 *.wav

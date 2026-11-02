@@ -1,7 +1,6 @@
 // Vídeo 1: O que acontece se você engolir chiclete?
 import {
-  THREE, W, H, mat, mesh, group, brilho, seg, smooth, easeOut, easeIn, back, elastic, pulse, wob, lerp, clamp01,
-  textoContorno, explosao,
+  THREE, W, mat, mesh, group, brilho, seg, smooth, easeOut, easeIn, back, elastic, pulse, lerp, textoContorno, explosao,
 } from '../engine.js';
 import { Boneco, POSES, misturar } from '../bonequinho.js';
 import { bolinha, placaAviso, particulas, RoundedBoxGeometry } from '../props.js';

@@ -1,6 +1,6 @@
 // Vídeo 2: O que acontece quando você estala os dedos?
 import {
-  THREE, W, mat, mesh, group, brilho, vidro, seg, smooth, easeOut, easeIn, back, elastic, pulse, lerp, textoContorno, explosao,
+  THREE, W, mat, mesh, group, brilho, seg, smooth, easeOut, back, elastic, pulse, lerp, textoContorno, explosao,
 } from '../engine.js';
 import { Boneco, POSES, misturar } from '../bonequinho.js';
 import { xis, check, relogio, trofeu, confete, particulas, RoundedBoxGeometry } from '../props.js';

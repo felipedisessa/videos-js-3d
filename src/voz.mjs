@@ -1,57 +1,57 @@
-// Narração (voz neural do Edge) com o tempo de cada palavra, e montagem da timeline do vídeo.
+// Narração (qualquer provedor de voz) com o tempo de cada palavra, e montagem da timeline do vídeo.
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
-import ffmpeg from 'ffmpeg-static';
-import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
-import { VIDEOS } from '../web/roteiros.js';
+import { RAIZ, SR, fatorVelocidade } from './config.mjs';
+import { provedor } from './tts/index.mjs';
+import { estimarPalavras } from './tts/alinhamento.mjs';
+import { decodificar, salvarWav } from './util/midia.mjs';
 
-export const SR = 48000;
-const norm = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+export const norm = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-export async function gerarVoz(id) {
-  const v = VIDEOS[id];
-  const dir = path.join('build', id, 'voz');
-  fs.mkdirSync(dir, { recursive: true });
-  let tts = null;
-  for (const [i, b] of v.beats.entries()) {
-    const base = path.join(dir, `${i}-${b.id}`);
-    const chave = `${v.voz}|${v.velocidade}|${b.texto}`;
-    if (fs.existsSync(base + '.json') && JSON.parse(fs.readFileSync(base + '.json', 'utf8')).chave === chave) continue;
-    if (!tts) {
-      tts = new MsEdgeTTS();
-      await tts.setMetadata(v.voz, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3, { wordBoundaryEnabled: true });
-    }
-    const tmp = base + '_tmp';
-    fs.rmSync(tmp, { recursive: true, force: true });
-    fs.mkdirSync(tmp);
-    let r;
-    for (let tentativa = 1; ; tentativa++) {
-      try {
-        r = await tts.toFile(tmp, b.texto, { rate: v.velocidade });
-        break;
-      } catch (e) {
-        if (tentativa >= 3) throw e;
-        tts.close();
-        tts = new MsEdgeTTS();
-        await tts.setMetadata(v.voz, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3, { wordBoundaryEnabled: true });
-      }
-    }
-    const meta = JSON.parse(fs.readFileSync(r.metadataFilePath, 'utf8')).Metadata
-      .filter((m) => m.Type === 'WordBoundary' && (m.Data.text.BoundaryType ?? 'WordBoundary') === 'WordBoundary')
-      .map((m) => ({ w: m.Data.text.Text, s: m.Data.Offset / 1e7, e: (m.Data.Offset + m.Data.Duration) / 1e7 }));
-    const dec = spawnSync(ffmpeg, ['-v', 'error', '-i', r.audioFilePath, '-ac', '1', '-ar', String(SR), '-f', 'f32le', base + '.f32']);
-    if (dec.status !== 0) throw new Error('ffmpeg: ' + dec.stderr);
-    const dur = fs.statSync(base + '.f32').size / 4 / SR;
-    fs.writeFileSync(base + '.json', JSON.stringify({ chave, dur, words: meta }, null, 1));
-    fs.rmSync(tmp, { recursive: true, force: true });
-    console.log(`  voz ${id}/${b.id}: ${dur.toFixed(2)}s`);
-  }
-  tts?.close();
+export const pastaBuild = (id) => path.join(RAIZ, 'build', id);
+
+/** Qual voz usar: --voz > vozes do roteiro > padrão do provedor. */
+export function escolherVoz(roteiro, cfg) {
+  const p = provedor(cfg.tts);
+  return { p, voz: cfg.voz ?? roteiro.vozes?.[p.nome] ?? p.vozPadrao() };
 }
 
-// alinha as palavras do TTS com o texto original (para manter pontuação na legenda)
-function alinhar(texto, words) {
+export async function gerarVoz(roteiro, cfg) {
+  const { p, voz } = escolherVoz(roteiro, cfg);
+  const velocidade = fatorVelocidade(roteiro.velocidade);
+  const dir = path.join(pastaBuild(roteiro.id), 'voz');
+  fs.mkdirSync(dir, { recursive: true });
+  let sint = null;
+  try {
+    for (const [i, b] of roteiro.beats.entries()) {
+      const base = path.join(dir, `${i}-${b.id}`);
+      const chave = `${p.nome}|${voz}|${velocidade}|${b.texto}`;
+      if (fs.existsSync(base + '.json') && JSON.parse(fs.readFileSync(base + '.json', 'utf8')).chave === chave) continue;
+      sint ??= await p.criar(voz);
+      const tmp = base + '_tmp';
+      const r = await sint.falar(b.texto, { velocidade, tmp });
+      let arquivo = r.arquivo;
+      if (!arquivo) {
+        fs.mkdirSync(tmp, { recursive: true });
+        arquivo = path.join(tmp, 'fala.wav');
+        salvarWav(arquivo, r.amostras, r.taxa);
+      }
+      const amostras = decodificar(arquivo);
+      const palavras = r.palavras?.length ? r.palavras : estimarPalavras(amostras, SR, b.texto);
+      fs.writeFileSync(base + '.f32', Buffer.from(amostras.buffer, amostras.byteOffset, amostras.byteLength));
+      const dur = amostras.length / SR;
+      const alinhamento = r.palavras?.length ? 'nativo' : 'estimado';
+      fs.writeFileSync(base + '.json', JSON.stringify({ chave, provedor: p.nome, voz, alinhamento, dur, words: palavras }, null, 1));
+      fs.rmSync(tmp, { recursive: true, force: true });
+      console.log(`  voz ${roteiro.id}/${b.id}: ${dur.toFixed(2)}s (${p.nome}/${voz || 'padrão'}, tempos ${alinhamento})`);
+    }
+  } finally {
+    sint?.fechar();
+  }
+}
+
+/** Alinha as palavras do TTS com o texto original (para manter a pontuação na legenda). */
+export function alinhar(texto, words) {
   const tokens = texto.split(/\s+/).filter(Boolean);
   let j = 0;
   return words.map((w) => {
@@ -70,7 +70,8 @@ function alinhar(texto, words) {
   });
 }
 
-function resolverCue(spec, b, ctx) {
+/** Converte a especificação de um momento (ver src/roteiros.mjs) em segundos desde o início do beat. */
+export function resolverCue(spec, b, ctx) {
   if (typeof spec === 'number') return spec;
   const m = /^(.*?)([+-]\d*\.?\d+)?$/.exec(spec);
   let base = m[1];
@@ -86,21 +87,20 @@ function resolverCue(spec, b, ctx) {
     if (base.includes('@')) [base, n] = [base.split('@')[0], parseInt(base.split('@')[1], 10)];
     const alvo = norm(base);
     const achados = ctx.words.filter((w) => norm(w.txt).startsWith(alvo) || norm(w.w).startsWith(alvo));
-    if (!achados[n - 1]) throw new Error(`cue "${spec}" não encontrada no beat ${b.id}`);
+    if (!achados[n - 1]) throw new Error(`cue "${spec}" não encontrada no beat ${b.id} (palavras: ${ctx.words.map((w) => w.txt).join(' ')})`);
     t = achados[n - 1].s;
   }
   return t + off;
 }
 
-export function montarTimeline(id, fps = 30) {
-  const v = VIDEOS[id];
-  const dir = path.join('build', id, 'voz');
+export function montarTimeline(roteiro, fps = 30) {
+  const dir = path.join(pastaBuild(roteiro.id), 'voz');
   let t = 0;
-  const beats = v.beats.map((b, i) => {
+  const beats = roteiro.beats.map((b, i) => {
     const voz = JSON.parse(fs.readFileSync(path.join(dir, `${i}-${b.id}.json`), 'utf8'));
     const pre = b.pre ?? 0.05;
     const ultima = voz.words[voz.words.length - 1];
-    const falaFim = pre + ultima.e;
+    const falaFim = pre + (ultima ? ultima.e : voz.dur);
     const dur = falaFim + (b.post ?? 0.14) + (b.hold ?? 0);
     const words = alinhar(b.texto, voz.words).map((w) => ({ ...w, s: w.s + pre, e: w.e + pre }));
     // destaques: 'palavra' (todas) ou 'palavra@n' (só a n-ésima)
@@ -119,5 +119,5 @@ export function montarTimeline(id, fps = 30) {
   });
   // arredonda a duração para frames inteiros
   const total = Math.ceil(t * fps) / fps;
-  return { id, fps, dur: total, beats, musica: v.musica, arquivo: v.arquivo };
+  return { id: roteiro.id, fps, dur: total, beats, musica: roteiro.musica, arquivo: roteiro.arquivo };
 }

@@ -1,6 +1,6 @@
 // Vídeo 7: O que acontece se você gritar no espaço?
 import {
-  THREE, W, mat, mesh, group, brilho, seg, smooth, easeOut, back, pulse, lerp, textoContorno, explosao,
+  THREE, W, mat, mesh, group, brilho, seg, smooth, back, pulse, lerp, textoContorno,
 } from '../engine.js';
 import { Boneco, misturar } from '../bonequinho.js';
 import { estrelas, xis, RoundedBoxGeometry } from '../props.js';

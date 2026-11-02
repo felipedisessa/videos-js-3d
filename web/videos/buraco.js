@@ -1,6 +1,6 @@
 // Vídeo 3: E se você pulasse num buraco que atravessa a Terra?
 import {
-  THREE, W, H, mat, mesh, group, brilho, rng, seg, smooth, easeOut, easeIn, easeInOut, back, elastic, pulse, wob, lerp, textoContorno,
+  THREE, W, mat, mesh, group, brilho, rng, seg, smooth, easeOut, easeIn, easeInOut, back, elastic, pulse, wob, lerp, textoContorno,
 } from '../engine.js';
 import { Boneco, POSES, misturar } from '../bonequinho.js';
 import { relogio, estrelas, particulas, RoundedBoxGeometry } from '../props.js';

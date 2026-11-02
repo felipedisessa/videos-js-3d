@@ -1,19 +1,27 @@
 # CLAUDE.md
 
-Gerador de Shorts/TikToks 3D "O que acontece se…?" para canal dark. Leia o `README.md` primeiro: ele documenta comandos, formato do roteiro, API do motor, personagens e props.
+Gerador de Shorts/TikToks 3D "O que acontece se…?" para canal dark. O `README.md` documenta comandos, vozes, formato do roteiro, API do motor, personagens e props: leia antes de mexer.
 
 ## Fluxo para criar vídeos novos
 
-1. Escolha temas com fatos verificáveis (pesquise e confira números; nada de conselho de saúde arriscado).
-2. Adicione o roteiro em `web/roteiros.js` e rode `npm run audio -- <id>`. Confira em `build/<id>/timeline.json` se cues e palavras saíram certos (o TTS às vezes junta "200 quilômetros por hora" numa palavra só; use `'w:200'` para cues numéricas).
-3. Crie `web/videos/<id>.js` reaproveitando cenas/objetos dos vídeos existentes (`import` de outro vídeo funciona: ex. `texturaTerra` de `buraco.js`, `predio`/`nuvem` de `formiga.js`, `pilula` de `chiclete.js`).
-4. `npm run stills -- <id>` e **olhe** `build/<id>/sheet.jpg` (3 frames por cena). Itere até nada ficar cortado e a ação ficar acima da legenda.
-5. `npm run video -- <id>` → sai em `Desktop\Videos Canal Dark 3D\` (+ versão sem música). Atualize o `LEIA-ME - titulos, legendas e hashtags.txt` dessa pasta com título, legenda e hashtags do vídeo novo.
+1. Escolha temas inéditos (veja `roteiros/`) com fatos verificáveis: pesquise e confira números; nada de conselho de saúde arriscado.
+2. `npm run novo -- <id> "Título"` e escreva `roteiros/<id>.mjs`, incluindo `publicacao` (legenda, hashtags, título e descrição do Shorts).
+3. `npm run audio -- <id>` e confira `build/<id>/timeline.json` (o TTS às vezes junta "200 quilômetros por hora" numa palavra; use `'w:200'` em cues numéricas).
+4. Monte `web/videos/<id>.js` reaproveitando cenas/objetos dos outros vídeos (`import` entre vídeos funciona: `texturaTerra` de `buraco.js`, `predio`/`nuvem` de `formiga.js`, `pilula` de `chiclete.js`).
+5. `npm run stills -- <id>` e **olhe** `build/<id>/sheet.jpg` (3 frames por cena). Itere até nada ficar cortado e a ação ficar acima da legenda.
+6. `npm run video -- <id>`. O MP4 e o LEIA-ME saem na pasta de saída (padrão: `Desktop/Videos Canal Dark 3D`).
+7. `npm run check` antes de commitar.
+
+## Vozes
+
+Provedores em `src/tts/` (edge, piper, sistema, azure, elevenlabs), escolhidos por `--tts` ou `TTS_PROVEDOR`. Quem não informa o tempo das palavras passa por `src/tts/alinhamento.mjs` (estimativa por pausas + sílabas, erro mediano ~70 ms). O cache em `build/<id>/voz` usa provedor+voz+velocidade+texto como chave.
 
 ## Armadilhas conhecidas
 
-- **Não use o UnrealBloomPass**: neste PC (Edge headless + ANGLE d3d11, RX 580) ele gera frames com alfa zerado e o frame anterior "vaza" no vídeo. O motor deixa o bloom desligado; brilho vem de materiais emissivos e sprites aditivos.
+- **Não use o UnrealBloomPass**: neste PC (Edge headless + ANGLE d3d11, RX 580) ele gera frames com alfa zerado e o frame anterior "vaza" no vídeo. O bloom fica desligado; brilho vem de materiais emissivos e sprites aditivos.
+- **sherpa-onnx-node fica na 1.13.x**: a 2.x removeu o fonetizador espeak embutido e as vozes Piper param de funcionar.
 - Sprites/halos e transparências escurecem com o GTAO ligado: use `E.gtao.enabled = false` nessas cenas.
+- `InstancedMesh` cujas instâncias começam fora da tela precisa de `frustumCulled = false` (a esfera envolvente é calculada uma vez só).
 - Cenas devem ser funções puras do tempo (nada de `+=` entre frames); objetos compartilhados entre sets precisam ter `visible` resetado em cada cena.
 - `Boneco.update` sempre deixa o boneco visível; esconda depois se precisar. Rotação do root é `YXZ` (rx = inclinar para frente).
 - Texto 3D é largo: confira nos stills se não cortou. Montserrat 900 cobre acentos; emojis caem na fonte do sistema.
