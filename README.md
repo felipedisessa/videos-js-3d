@@ -156,7 +156,8 @@ Personagem (`web/bonequinho.js`): `new Boneco({ camisa, calca, cabelo, estilo, o
 
 Peças prontas:
 - `web/props.js`: xis, check, placa de aviso, relógio, troféu, confete, estrelas, partículas, bolinha com rosto.
-- `web/biblioteca/espaco.js`: `texturaTerra` (continentes reais), `texturaCamadas` (corte da Terra), `texturaLua`, `halo`, `atmosfera`, `astronauta`, `buracoNegro`.
+- `web/biblioteca/espaco.js`: `texturaTerra` (continentes reais), `texturaCamadas` (corte da Terra), `texturaLua`, `halo`, `atmosfera`, `astronauta`, `buracoNegro`, `satelite` (telescópio com painéis soltáveis e `queimar(k)`), `rastroFogo` (reentrada/meteoro), `pontoLatLon` e `centrarGlobo` (posicionar por lat/lon), `texturaManchas` (manchas de calor etc. sobre o globo).
+- `web/biblioteca/clima.js`: `mapaBrasil` (relevo por região, com `ponto(lon, lat)`, `regioes.<nome>.pintar()` e o rio Amazonas), `termometro` (`nivel(k)`), `chuva`, `chama`, `frenteFria`.
 - `web/biblioteca/seres.js`: `criarAbelha`, `bacteria`, `criarFormiga`, `criarGato`.
 - `web/biblioteca/cenario.js`: `flor`, `alimento` (maçã, melancia, amêndoa, café, arroz, pão, milho), `predio`, `casa`, `carro`, `arvore`, `nuvem`, `seta`, `texturaRocha`.
 - `web/biblioteca/hud.js` (2D): `pilula` (chamada "SIGA…"), `estrela`, `barra` (porcentagem), `grafico` (barras comparativas).

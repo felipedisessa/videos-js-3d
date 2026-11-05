@@ -193,3 +193,152 @@ export function buracoNegro() {
 export function atmosfera(r) {
   return new THREE.Mesh(new THREE.SphereGeometry(r, 64, 48), new THREE.ShaderMaterial(ATMOS));
 }
+
+// ---------- globo: posições por latitude/longitude ----------
+const GRAU = Math.PI / 180;
+
+/** Ponto na superfície de uma esfera de raio `r` (sem rotação), no mesmo mapeamento da texturaTerra. */
+export function pontoLatLon(lat, lon, r = 1) {
+  const phi = (lon + 180) * GRAU;
+  const th = (90 - lat) * GRAU;
+  return new THREE.Vector3(-r * Math.cos(phi) * Math.sin(th), r * Math.cos(th), r * Math.sin(phi) * Math.sin(th));
+}
+
+/** Gira um globo (esfera com texturaTerra) para que `lat`/`lon` fique virado para +z (a câmera). */
+export function centrarGlobo(obj, lat, lon) {
+  obj.rotation.set(lat * GRAU, -(lon + 90) * GRAU, 0, 'XYZ');
+  return obj;
+}
+
+/**
+ * Camada transparente para pôr sobre um globo: manchas suaves em lat/lon (graus).
+ * manchas: [{ lat, lon, rx, ry, cor: '255,80,40', a }] (rx/ry = raios em graus).
+ */
+export function texturaManchas(manchas, w = 1024, h = 512) {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const x = c.getContext('2d');
+  for (const { lat, lon, rx, ry, cor, a = 1 } of manchas) {
+    const cx = ((lon + 180) / 360) * w;
+    const cy = ((90 - lat) / 180) * h;
+    const r = (ry / 180) * h;
+    x.save();
+    x.translate(cx, cy);
+    x.scale(((rx / 360) * w) / r, 1);
+    const g = x.createRadialGradient(0, 0, 0, 0, 0, r);
+    g.addColorStop(0, `rgba(${cor},${a})`);
+    g.addColorStop(0.55, `rgba(${cor},${a * 0.6})`);
+    g.addColorStop(1, `rgba(${cor},0)`);
+    x.fillStyle = g;
+    x.beginPath(); x.arc(0, 0, r, 0, Math.PI * 2); x.fill();
+    x.restore();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+// ---------- satélite / telescópio espacial ----------
+function texturaPainel() {
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 128;
+  const x = c.getContext('2d');
+  x.fillStyle = '#c9d2de';
+  x.fillRect(0, 0, 256, 128);
+  for (let i = 0; i < 8; i++) for (let j = 0; j < 4; j++) {
+    const g = x.createLinearGradient(0, j * 32, 0, j * 32 + 30);
+    g.addColorStop(0, '#2b5fd9');
+    g.addColorStop(1, '#13306f');
+    x.fillStyle = g;
+    x.fillRect(i * 32 + 2, j * 32 + 2, 28, 28);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/**
+ * Satélite estilo telescópio espacial (corpo dourado, detector na frente, tubos e dois painéis solares).
+ * sat.paineis[0|1] são grupos (dá para soltar/girar), sat.queimar(k) deixa tudo incandescente (0 = normal).
+ */
+export function satelite() {
+  const g = new THREE.Group();
+  const ouro = mat(0xe0a526, { metalness: 0.85, roughness: 0.32, clearcoat: 0.4 });
+  const prata = mat(0xd9dde3, { metalness: 0.7, roughness: 0.28 });
+  const branco = mat(0xf1f5f9, { roughness: 0.45 });
+  const escuro = mat(0x2b2f36, { roughness: 0.55, metalness: 0.3 });
+  const corpo = new THREE.Group();
+  g.add(corpo);
+  mesh(new RoundedBoxGeometry(0.9, 1.5, 0.9, 3, 0.06), ouro, { parent: corpo });
+  mesh(new RoundedBoxGeometry(1.5, 1.05, 0.24, 2, 0.04), escuro, { pos: [0, 0.18, 0.56], parent: corpo });
+  for (let i = 0; i < 5; i++) mesh(new THREE.BoxGeometry(1.42, 0.03, 0.05), prata, { pos: [0, -0.25 + i * 0.21, 0.7], parent: corpo });
+  mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.75, 28), branco, { pos: [0.27, 0.12, -0.62], parent: corpo });
+  mesh(new THREE.CylinderGeometry(0.13, 0.13, 1.55, 24), branco, { pos: [-0.3, 0.05, -0.6], parent: corpo });
+  mesh(new THREE.CircleGeometry(0.17, 24), escuro, { pos: [0.27, 1.0, -0.62], rot: [-Math.PI / 2, 0, 0], parent: corpo });
+  mesh(new THREE.SphereGeometry(0.22, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2.4), prata, { pos: [0, -0.92, 0], rot: [Math.PI, 0, 0], parent: corpo });
+  const painelM = new THREE.MeshPhysicalMaterial({ map: texturaPainel(), roughness: 0.25, metalness: 0.4, clearcoat: 1 });
+  const paineis = [1, -1].map((sx) => {
+    const p = new THREE.Group();
+    p.position.set(sx * 0.45, 0.05, 0);
+    g.add(p);
+    mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.55, 8), prata, { pos: [sx * 0.27, 0, 0], rot: [0, 0, Math.PI / 2], parent: p });
+    mesh(new THREE.BoxGeometry(1.9, 0.95, 0.04), [prata, prata, prata, prata, painelM, painelM], { pos: [sx * 1.5, 0, 0], parent: p });
+    return p;
+  });
+  const mats = [ouro, prata, branco, escuro, painelM];
+  g.corpo = corpo;
+  g.paineis = paineis;
+  g.queimar = (k) => {
+    for (const m of mats) {
+      m.emissive.set(0xff5a1a);
+      m.emissiveIntensity = 1.6 * k;
+    }
+  };
+  return g;
+}
+
+/**
+ * Rastro de fogo de reentrada: cones aditivos + brilho + faíscas. O rastro sai do objeto na direção +z local;
+ * use `rastro.lookAt(pontoAtras)` (em coordenadas do pai) e `rastro.atualizar(T, k)` (k = intensidade 0..1).
+ */
+export function rastroFogo({ comprimento = 6, raio = 0.9, faiscas = 50, seed = 7 } = {}) {
+  const g = new THREE.Group();
+  const add = (r, h, cor, op) => {
+    const geo = new THREE.ConeGeometry(r, h, 28, 1, true);
+    geo.rotateX(Math.PI / 2);
+    geo.translate(0, 0, h / 2);
+    const m = new THREE.MeshBasicMaterial({ color: cor, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+    return mesh(geo, m, { parent: g, sombra: false, recebe: false });
+  };
+  const cones = [add(raio, comprimento, 0xff3d0a, 0.35), add(raio * 0.68, comprimento * 0.7, 0xff8a1a, 0.5), add(raio * 0.38, comprimento * 0.4, 0xfff0b0, 0.85)];
+  const frente = halo('255,190,110', 3.2);
+  g.add(frente);
+  const R = rng(seed);
+  const dados = Array.from({ length: faiscas }, () => ({ a: R() * Math.PI * 2, d: 0.2 + R() * 0.8, f: R(), v: 0.7 + R() * 0.8, r: 0.5 + R() * 0.5 }));
+  const inst = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), brilho(0xffb347, 4, { fog: false }), faiscas);
+  inst.frustumCulled = false;
+  inst.castShadow = false;
+  g.add(inst);
+  const o = new THREE.Object3D();
+  g.atualizar = (T, k = 1) => {
+    g.visible = k > 0.01;
+    cones.forEach((c, i) => {
+      const f = 1 + 0.08 * Math.sin(T * 41 + i * 2.1) + 0.05 * Math.sin(T * 67 + i);
+      c.scale.set(k * f, k * f, Math.max(0.01, k * (0.85 + 0.15 * Math.sin(T * 23 + i))));
+    });
+    frente.scale.setScalar(3.2 * raio * k * (1 + 0.08 * Math.sin(T * 37)));
+    dados.forEach((p, i) => {
+      const u = (p.f + T * 1.7 * p.v) % 1;
+      const sp = raio * p.d * (0.3 + u);
+      o.position.set(Math.cos(p.a) * sp, Math.sin(p.a) * sp, u * comprimento * 0.95);
+      o.scale.setScalar(0.07 * raio * p.r * (1 - u) * k + 1e-4);
+      o.updateMatrix();
+      inst.setMatrixAt(i, o.matrix);
+    });
+    inst.instanceMatrix.needsUpdate = true;
+  };
+  g.atualizar(0, 1);
+  return g;
+}
